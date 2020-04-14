@@ -40,96 +40,71 @@
 //       0  OUTNE (see data sheet)
 //        0 OUTNE 
 
-int prescale2 = 0;;
+double countsPerUsec = 4096.0/20000.0;
+
+void writeSingleRegister(int regnum, uint8_t regval) {
+    Wire.beginTransmission(SRV_I2C_ADDR);
+    Wire.write(regnum);
+    Wire.write(regval);
+    Wire.endTransmission(true);        // stop transmitting
+}
+
+char readSingleRegister(int regnum) {
+    Wire.beginTransmission(SRV_I2C_ADDR);
+    Wire.write(regnum);
+    Wire.endTransmission(true);        // stop transmitting
+    Wire.requestFrom(SRV_I2C_ADDR, 1);    // request 1 byte
+    if(Wire.available()) {   // slave may send less than requested
+        return( Wire.read());
+    } else {
+        return 0;
+    }
+}
+
+void setChannelMicroseconds(int channum, long usecs) {
+    uint16_t offvalue;
+    uint8_t regaddr;
+
+    offvalue = round(double(usecs) * countsPerUsec);
+    regaddr = SRV_REG_CHAN_BASE + ((channum-1)*4);
+
+    // Always set start time to zero
+    // Assume register address autoincrement is on
+    Wire.beginTransmission(SRV_I2C_ADDR);
+    Wire.write(regaddr);
+    Wire.write(0x00);
+    Wire.write(0x00);
+    Wire.write(offvalue & 0xFF);
+    Wire.write((offvalue & 0x0F00) >> 8);
+    Wire.endTransmission(true);
+}
+
 
 void setup() {
     Serial.begin(9600);
     Wire.setSpeed(CLOCK_SPEED_400KHZ);
     Wire.begin(); // Join I2C as a master
+
     // Calculate Prescale
     int prescale = (SRV_OSCILLATOR_FREQUENCY/(4096 * UPDATE_RATE))-1;
 
     // Make sure we're in sleep mode before writing prescale
-    Wire.beginTransmission(SRV_I2C_ADDR);
-    Wire.write(SRV_REG_MODE_1);
-    Wire.write(0x11);
-    Wire.endTransmission(true);        // stop transmitting
+    writeSingleRegister(SRV_REG_MODE_1, 0x11);
     delay(250);
-    
 
     // Set PRESCALE for 50 Hz
-    Wire.beginTransmission(SRV_I2C_ADDR);
-    Wire.write(SRV_REG_PRESCALE);  // send the register address
-    Wire.write(uint8_t(prescale)); // set the prescale register
-    Wire.endTransmission(true);        // stop transmitting
+    writeSingleRegister(SRV_REG_PRESCALE, prescale);
 
     // Set mode 1 register
     // address auto-increment plus not sleep
-    Wire.beginTransmission(SRV_I2C_ADDR);
-    Wire.write(SRV_REG_MODE_1);
-    Wire.write(0x21);
-    Wire.endTransmission(true);        // stop transmitting
+    writeSingleRegister(SRV_REG_MODE_1, 0x21);
 }
 
-byte x = 0;
-
 void loop() {
-    // read the first mode register
-    Wire.beginTransmission(SRV_I2C_ADDR);
-    Wire.write(SRV_REG_MODE_1);
-    Wire.endTransmission(true);        // stop transmitting
-    Wire.requestFrom(SRV_I2C_ADDR, 1);    // request 1 byte
-    if(Wire.available()) {   // slave may send less than requested
-        char c = Wire.read();    // receive a byte as character
-        Serial.printlnf("M1 = %X", c);
-    } else {
-        Serial.println("M1 nothing");
-    }
+    Serial.printlnf("M1 = %X", readSingleRegister(SRV_REG_MODE_1));
+    Serial.printlnf("M2 = %X", readSingleRegister(SRV_REG_MODE_2));
+    Serial.printlnf("Prescale = %X", readSingleRegister(SRV_REG_PRESCALE));
 
-    // read the second mode register
-    Wire.beginTransmission(SRV_I2C_ADDR);
-    Wire.write(SRV_REG_MODE_2);
-    Wire.endTransmission(true);        // stop transmitting
-    Wire.requestFrom(SRV_I2C_ADDR, 1);    // request 1 byte
-    if(Wire.available()) {   // slave may send less than requested
-        char c = Wire.read();    // receive a byte as character
-        Serial.printlnf("M2 = %X", c);
-    } else {
-        Serial.println("M2 nothing");
-    }
-
-    // read the prescaleregister
-    Wire.beginTransmission(SRV_I2C_ADDR);
-    Wire.write(SRV_REG_PRESCALE);
-    Wire.endTransmission(true);        // stop transmitting
-    Wire.requestFrom(SRV_I2C_ADDR, 1);    // request 1 byte
-    if(Wire.available()) {   // slave may send less than requested
-        char c = Wire.read();    // receive a byte as character
-        Serial.printlnf("Prescale = %d", c);
-    } else {
-        Serial.println("Prescale nothing");
-    }
-
-
-    Wire.beginTransmission(SRV_I2C_ADDR);
-    Wire.write(SRV_REG_CHAN_BASE);
-    Wire.write(0x00); // set the register data
-    Wire.endTransmission();        // stop transmitting
-
-    Wire.beginTransmission(SRV_I2C_ADDR);
-    Wire.write(SRV_REG_CHAN_BASE+1);
-    Wire.write(0x00); // set the register data
-    Wire.endTransmission();        // stop transmitting
-
-    Wire.beginTransmission(SRV_I2C_ADDR);
-    Wire.write(SRV_REG_CHAN_BASE+2);
-    Wire.write(0x00); // set the register data
-    Wire.endTransmission();        // stop transmitting
-
-    Wire.beginTransmission(SRV_I2C_ADDR);
-    Wire.write(SRV_REG_CHAN_BASE+3);
-    Wire.write(0x08); // set the register data
-    Wire.endTransmission(true);        // stop transmitting
-
+    setChannelMicroseconds(1, 10000);
   delay(1000);
 }

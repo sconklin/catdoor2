@@ -6,14 +6,44 @@
  */
 double countsPerUsec = 4096.0/20000.0;
 
-void writeSingleRegister(int regnum, unsigned char regval) {
+void servoInit(void) {
+    // Calculate Prescale
+    int prescale = (SRV_OSCILLATOR_FREQUENCY/(4096 * SRV_UPDATE_RATE))-1;
+
+    servoSetPrescale(prescale);
+    servoSetAutoIncrement(true);
+}
+
+void servoSleep(void) {
+    unsigned char regval = servoReadSingleRegister(SRV_REG_MODE_1);
+    servoWriteSingleRegister(SRV_REG_MODE_1, regval |= SRV_SLEEP_BIT);
+    delay(50);
+}
+
+void servoWake() {
+    unsigned char regval = servoReadSingleRegister(SRV_REG_MODE_1);
+    servoWriteSingleRegister(SRV_REG_MODE_1, regval &= ~SRV_SLEEP_BIT);
+}
+
+void servoSetPrescale(unsigned char prescale) {
+    servoSleep();
+    servoWriteSingleRegister(SRV_REG_PRESCALE, prescale);
+    servoWake();
+}
+
+void servoSetAutoIncrement(bool ai) {
+    unsigned char regval = servoReadSingleRegister(SRV_REG_MODE_1);
+    servoWriteSingleRegister(SRV_REG_MODE_1, regval |= SRV_AI_BIT);
+}
+
+void servoWriteSingleRegister(int regnum, unsigned char regval) {
     Wire.beginTransmission(SRV_I2C_ADDR);
     Wire.write(regnum);
     Wire.write(regval);
     Wire.endTransmission(true);        // stop transmitting
 }
 
-char readSingleRegister(int regnum) {
+unsigned char servoReadSingleRegister(int regnum) {
     Wire.beginTransmission(SRV_I2C_ADDR);
     Wire.write(regnum);
     Wire.endTransmission(true);        // stop transmitting
@@ -25,7 +55,7 @@ char readSingleRegister(int regnum) {
     }
 }
 
-void setChannelMicroseconds(int channum, long usecs) {
+void servoSetChannelMicroseconds(int channum, long usecs) {
     uint16_t offvalue;
     unsigned char regaddr;
 

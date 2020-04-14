@@ -1,6 +1,6 @@
 // Internal oscillator frequency varies between ICs, calibrate this to your part
 #define SRV_OSCILLATOR_FREQUENCY (26450000)
-#define UPDATE_RATE 50 // 50 Hz update for servos
+#define SRV_UPDATE_RATE 50 // 50 Hz update for servos
 
 /* Default controller I2C address ix 0x40
  * Default all-call LED address is 0xE0
@@ -14,6 +14,9 @@
 #define SRV_REG_PRESCALE 254
 // PRESCALE can only be set when SLEEP = 1
 #define SRV_REG_CHAN_BASE 6
+
+#define SRV_SLEEP_BIT 0x10
+#define SRV_AI_BIT 0x20
 
 // Mode register 1 default
 // 0x11
@@ -37,6 +40,11 @@
 //       0  OUTNE (see data sheet)
 //        0 OUTNE 
 
-void writeSingleRegister(int, unsigned char);
-char readSingleRegister(int);
-void setChannelMicroseconds(int, long);
+void servoInit(void);
+void servoSleep(void);
+void servoWake(void);
+void servoSetPrescale(unsigned char);
+void servoSetAutoIncrement(bool);
+void servoWriteSingleRegister(int, unsigned char);
+unsigned char servoReadSingleRegister(int);
+void servoSetChannelMicroseconds(int, long);

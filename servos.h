@@ -18,6 +18,18 @@
 #define SRV_SLEEP_BIT 0x10
 #define SRV_AI_BIT 0x20
 
+#define SERVO_1_FEEDBACK_PIN A0
+#define SERVO_2_FEEDBACK_PIN A1
+
+#define SRV_STOP_US 1500
+// 1465 moves one servo but not the other
+#define SRV_CW_VERY_SLOW_US 1460
+#define SRV_CW_SLOW_US 1465
+#define SRV_CW_FAST_US 1280
+#define SRV_CCW_VERY_SLOW_US 1550
+#define SRV_CCW_SLOW_US 1580
+#define SRV_CCW_FAST_US 1720
+
 // Mode register 1 default
 // 0x11
 // 0        RESTART (0 = disabled)
@@ -39,6 +51,10 @@
 //      1   OUTDRV (0 = open-drain, 1 = totem pole)
 //       0  OUTNE (see data sheet)
 //        0 OUTNE 
+
+extern int servoPosition1;
+extern int servoPosition2;
+
 
 void servoInit(void);
 void servoSleep(void);

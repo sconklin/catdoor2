@@ -5,6 +5,16 @@
  * which uses a PCA9685 I2C PWM LED controller.
  */
 double countsPerUsec = 4096.0/20000.0;
+int servoPosition1;
+int servoPosition2;
+
+void servoHandleTimer()
+{
+    servoPosition1 = (analogRead(SERVO_1_FEEDBACK_PIN) * 360) / 4096;
+    servoPosition2 = (analogRead(SERVO_1_FEEDBACK_PIN) * 360) / 4096;
+}
+
+Timer servotimer(10, servoHandleTimer);
 
 void servoInit(void) {
     // Calculate Prescale
@@ -12,6 +22,7 @@ void servoInit(void) {
 
     servoSetPrescale(prescale);
     servoSetAutoIncrement(true);
+    servotimer.start();
 }
 
 void servoSleep(void) {
